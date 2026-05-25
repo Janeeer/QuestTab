@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { DndContext, type DragEndEvent } from '@dnd-kit/core';
+import { DndContext, DragOverlay, MouseSensor, TouchSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core';
 import { TaskContextProvider, useTaskContext } from '../../context/TaskContext';
 import { Header } from '../../components/dashboard/Header';
 import { InboxSidebar } from '../../components/dashboard/InboxSidebar';
@@ -13,9 +13,21 @@ function Dashboard() {
   const { tasks, moveToToday, moveToInbox, moveColumn, startTask, markDone, deleteTask, editTask } = useTaskContext();
   const [inboxOpen, setInboxOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const editingTask = editingTaskId ? tasks.find(t => t.id === editingTaskId) : null;
+  const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+  );
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
+    setActiveId(null);
     const { active, over } = event;
     if (!over) return;
     const taskId = active.id as string;
@@ -40,12 +52,13 @@ function Dashboard() {
     if (tab.id != null) await startTask(task.id, tab.id);
   };
 
-  const handleOpenAgain = (task: Task) => {
-    chrome.tabs.create({ url: task.url });
+  const handleOpenAgain = async (task: Task) => {
+    const tab = await chrome.tabs.create({ url: task.url });
+    if (tab.id != null) await startTask(task.id, tab.id);
   };
 
   return (
-    <DndContext onDragEnd={handleDragEnd}>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
       <div className={styles.layout}>
         <Header inboxOpen={inboxOpen} onToggleInbox={() => setInboxOpen(o => !o)} />
         <div className={styles.body}>
@@ -70,6 +83,14 @@ function Dashboard() {
           onClose={() => setEditingTaskId(null)}
         />
       )}
+      <DragOverlay>
+        {activeTask && (
+          <div className={styles.dragPreview}>
+            <div className={styles.dragPreviewTitle}>{activeTask.title}</div>
+            <div className={styles.dragPreviewDomain}>{activeTask.domain}</div>
+          </div>
+        )}
+      </DragOverlay>
     </DndContext>
   );
 }

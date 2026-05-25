@@ -42,11 +42,11 @@ interface QuestColumnProps {
 export function QuestColumn({ column, tasks, ...handlers }: QuestColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: column });
   const columnTasks = tasks.filter(
-    t => (t.status === 'today' || t.status === 'in_progress') && t.column === column
+    t => (t.status === 'today' || t.status === 'in_progress' || t.status === 'done') && t.column === column
   );
 
   return (
-    <div className={`${styles.column} ${column === 'boss' ? styles.boss : ''}`}>
+    <div className={`${styles.column} ${styles[column]}`}>
       <div className={styles.header}>
         <span className={styles.label}>{COLUMN_LABELS[column]}</span>
         <span className={styles.count}>{columnTasks.length}</span>

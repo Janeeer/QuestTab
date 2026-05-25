@@ -42,6 +42,28 @@ export default defineBackground(() => {
     }
   });
 
+  // Flush accumulated time to storage every 10s so the dashboard always shows fresh values
+  setInterval(async () => {
+    const stopped = tracker.stopAll();
+    if (stopped.length === 0) return;
+    const tasks = await getTasks();
+    for (const { taskId, seconds } of stopped) {
+      if (seconds <= 0) continue;
+      const task = tasks.find(t => t.id === taskId);
+      if (task) await updateTask(taskId, { activeSeconds: task.activeSeconds + seconds });
+    }
+    // Restart tracking for whichever task tab is currently active
+    chrome.tabs.query({ active: true, currentWindow: true }, async tabs => {
+      if (tabs[0]?.id == null || !windowFocused) return;
+      const refreshed = await getTasks();
+      for (const task of refreshed) {
+        if (task.status === 'in_progress' && task.trackedTabId === tabs[0].id) {
+          tracker.startTick(task.id);
+        }
+      }
+    });
+  }, 10_000);
+
   chrome.windows.onFocusChanged.addListener(async windowId => {
     if (windowId === chrome.windows.WINDOW_ID_NONE) {
       windowFocused = false;

@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { Task } from '../../types/task';
 import styles from './TaskCard.module.css';
 
 function formatSeconds(total: number): string {
-  const m = Math.floor(total / 60);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
   const s = total % 60;
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
@@ -19,17 +21,6 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onStart, onMarkDone, onOpenAgain, onEdit, onDelete }: TaskCardProps) {
   const [hovered, setHovered] = useState(false);
-  const [localSeconds, setLocalSeconds] = useState(task.activeSeconds);
-
-  useEffect(() => {
-    setLocalSeconds(task.activeSeconds);
-  }, [task.activeSeconds]);
-
-  useEffect(() => {
-    if (task.status !== 'in_progress') return;
-    const id = setInterval(() => setLocalSeconds(s => s + 1), 1000);
-    return () => clearInterval(id);
-  }, [task.status]);
 
   return (
     <div
@@ -44,8 +35,8 @@ export function TaskCard({ task, onStart, onMarkDone, onOpenAgain, onEdit, onDel
 
       <div className={styles.meta}>
         <span className={styles.domain}>{task.domain}</span>
-        {task.status === 'in_progress' && (
-          <span className={styles.timer}>{formatSeconds(localSeconds)}</span>
+        {task.activeSeconds > 0 && (
+          <span className={styles.timer}>{formatSeconds(task.activeSeconds)}</span>
         )}
       </div>
 
