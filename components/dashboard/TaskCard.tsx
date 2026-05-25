@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Task } from '../../types/task';
+import { useTaskContext } from '../../context/TaskContext';
 import styles from './TaskCard.module.css';
 
 function formatDuration(total: number): string {
@@ -15,6 +16,7 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onMarkDone, onEdit, onDelete }: TaskCardProps) {
   const [hovered, setHovered] = useState(false);
+  const { lastTimedId } = useTaskContext();
   const columnClass = task.status === 'in_progress' && task.column
     ? styles[`in_progress_${task.column}`]
     : '';
@@ -37,7 +39,10 @@ export function TaskCard({ task, onMarkDone, onEdit, onDelete }: TaskCardProps) 
         }
         <span className={styles.title}>{task.title}</span>
         {task.activeSeconds > 0 && (
-          <span className={styles.timer}>{formatDuration(task.activeSeconds)}</span>
+          <span className={styles.timerWrapper}>
+            <span className={styles.timer}>{formatDuration(task.activeSeconds)}</span>
+            {lastTimedId === task.id && <span className={styles.activeDot} />}
+          </span>
         )}
       </div>
 

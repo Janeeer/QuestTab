@@ -21,6 +21,14 @@ export function EditModal({ task, onSave, onClose }: EditModalProps) {
         <h3 className={styles.heading}>Edit Task</h3>
 
         <div className={styles.field}>
+          <label className={styles.label}>URL</label>
+          <div className={styles.urlDisplay}>
+            {task.favicon && <img src={task.favicon} className={styles.urlFavicon} alt="" />}
+            <a href={task.url} target="_blank" rel="noreferrer" className={styles.urlLink}>{task.url}</a>
+          </div>
+        </div>
+
+        <div className={styles.field}>
           <label className={styles.label}>Title</label>
           <input className={styles.input} value={title} onChange={e => setTitle(e.target.value)} />
         </div>

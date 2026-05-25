@@ -4,6 +4,7 @@ import { getTasks, setTasks } from '../utils/storage';
 
 interface TaskContextValue {
   tasks: Task[];
+  lastTimedId: string | null;
   addTask: (
     data: Omit<Task, 'id' | 'status' | 'activeSeconds' | 'createdAt' | 'updatedAt'>,
     toToday?: boolean
@@ -29,6 +30,7 @@ function migrate(t: Task): Task {
 
 export function TaskContextProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasksState] = useState<Task[]>([]);
+  const [lastTimedId, setLastTimedId] = useState<string | null>(null);
   const tasksRef = useRef<Task[]>([]);
 
   const setTasks_ = (next: Task[]) => {
@@ -39,7 +41,18 @@ export function TaskContextProvider({ children }: { children: React.ReactNode })
   useEffect(() => {
     getTasks().then(raw => setTasks_(raw.map(migrate)));
     const listener = (changes: Record<string, chrome.storage.StorageChange>) => {
-      if (changes.tasks) setTasks_(((changes.tasks.newValue as Task[]) ?? []).map(migrate));
+      if (!changes.tasks) return;
+      const oldTasks = (changes.tasks.oldValue as Task[]) ?? [];
+      const newTasks = ((changes.tasks.newValue as Task[]) ?? []).map(migrate);
+      setTasks_(newTasks);
+      // Detect which task just had activeSeconds written by the background
+      for (const t of newTasks) {
+        const old = oldTasks.find(o => o.id === t.id);
+        if (old && t.activeSeconds > old.activeSeconds) {
+          setLastTimedId(t.id);
+          break;
+        }
+      }
     };
     chrome.storage.onChanged.addListener(listener);
     return () => chrome.storage.onChanged.removeListener(listener);
@@ -121,7 +134,7 @@ export function TaskContextProvider({ children }: { children: React.ReactNode })
     persist(prev => prev.filter(t => t.id !== taskId));
 
   return (
-    <TaskContext.Provider value={{ tasks, addTask, moveToToday, moveToInbox, moveColumn, startTask, setTrackedTab, markDone, editTask, assignTimeBlock, removeTimeBlock, deleteTask }}>
+    <TaskContext.Provider value={{ tasks, lastTimedId, addTask, moveToToday, moveToInbox, moveColumn, startTask, setTrackedTab, markDone, editTask, assignTimeBlock, removeTimeBlock, deleteTask }}>
       {children}
     </TaskContext.Provider>
   );

@@ -9,13 +9,30 @@ import { EditModal } from '../../components/dashboard/EditModal';
 import type { Task, QuestColumn, TimeBlock } from '../../types/task';
 import styles from './App.module.css';
 
+interface DupConfirm {
+  existing: Task;
+  onConfirm: () => void;
+}
+
 function Dashboard() {
   const { tasks, moveToToday, moveToInbox, moveColumn, startTask, setTrackedTab, markDone, deleteTask, editTask, assignTimeBlock, removeTimeBlock } = useTaskContext();
   const [inboxOpen, setInboxOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [dupConfirm, setDupConfirm] = useState<DupConfirm | null>(null);
   const editingTask = editingTaskId ? tasks.find(t => t.id === editingTaskId) : null;
   const activeTask = activeId ? tasks.find(t => t.id === activeId) : null;
+
+  const withDupCheck = (taskId: string, action: () => void) => {
+    const task = tasks.find(t => t.id === taskId);
+    if (!task) return action();
+    const existing = tasks.find(t => t.id !== taskId && t.url === task.url);
+    if (existing) {
+      setDupConfirm({ existing, onConfirm: action });
+    } else {
+      action();
+    }
+  };
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
@@ -36,20 +53,24 @@ function Dashboard() {
     if (!task) return;
 
     if (target === 'inbox') {
-      moveToInbox(taskId);
+      withDupCheck(taskId, () => moveToInbox(taskId));
     } else if (['boss', 'main', 'side'].includes(target)) {
       const col = target as QuestColumn;
       if (task.status === 'inbox') {
-        moveToToday(taskId, col);
+        withDupCheck(taskId, () => moveToToday(taskId, col));
       } else {
         moveColumn(taskId, col);
       }
     } else if (target.startsWith('timeblock-')) {
       const block = target.replace('timeblock-', '') as TimeBlock;
       if (task.status === 'inbox') {
-        await moveToToday(taskId, 'main');
+        withDupCheck(taskId, async () => {
+          await moveToToday(taskId, 'main');
+          assignTimeBlock(taskId, block);
+        });
+      } else {
+        assignTimeBlock(taskId, block);
       }
-      assignTimeBlock(taskId, block);
     }
   };
 
@@ -92,6 +113,19 @@ function Dashboard() {
           onSave={patch => editTask(editingTask.id, patch)}
           onClose={() => setEditingTaskId(null)}
         />
+      )}
+      {dupConfirm && (
+        <div className={styles.dupOverlay}>
+          <div className={styles.dupModal}>
+            <div className={styles.dupTitle}>重复关卡</div>
+            <div className={styles.dupBody}>相同 URL 已存在：</div>
+            <div className={styles.dupExisting}>{dupConfirm.existing.title}</div>
+            <div className={styles.dupActions}>
+              <button className={styles.dupCancel} onClick={() => setDupConfirm(null)}>取消</button>
+              <button className={styles.dupConfirm} onClick={() => { dupConfirm.onConfirm(); setDupConfirm(null); }}>仍然移动</button>
+            </div>
+          </div>
+        </div>
       )}
       <DragOverlay>
         {activeTask && (

@@ -23,33 +23,36 @@
 .in_progress_main { border-color: #3b82f6; }
 .in_progress_side { border-color: #22c55e; }
 
-/* Mask container: clips children to the border ring only */
+/* Mask container: overflow:hidden + mask both target the padding ring */
 .borderGlow {
   position: absolute;
   inset: -2px;
   border-radius: 8px;
-  border: 4px solid transparent;
+  padding: 4px;
   pointer-events: none;
+  overflow: hidden;
   -webkit-mask:
     linear-gradient(#fff, #fff) content-box,
-    linear-gradient(#fff, #fff) border-box;
+    linear-gradient(#fff, #fff) padding-box;
   -webkit-mask-composite: xor;
   mask:
     linear-gradient(#fff, #fff) content-box,
-    linear-gradient(#fff, #fff) border-box;
+    linear-gradient(#fff, #fff) padding-box;
   mask-composite: exclude;
 }
 
-/* Comet: asymmetric tail → bright white head, follows path direction */
+/* Comet: path centered in the 4px padding ring */
 .glowDot {
   position: absolute;
   width: 80px;
-  height: 2.4px;
+  height: 20px;
   border-radius: 3px;
   background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.4) 50%, white 100%);
   filter: blur(1.5px);
-  offset-path: inset(0 0 0 0 round 8px);
+  offset-path: inset(2px 2px 2px 2px round 6px);
   offset-rotate: auto;
+  will-change: offset-distance;
+  transform: translateZ(0);
   animation: travelBorder 4s linear infinite;
 }
 
@@ -100,11 +103,25 @@
   flex: 1;
 }
 
+.timerWrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
 .timer {
   font-size: 11px;
   color: #6366f1;
   font-variant-numeric: tabular-nums;
-  flex-shrink: 0;
+}
+
+.activeDot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #6366f1;
 }
 
 .actions {

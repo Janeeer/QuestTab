@@ -37,8 +37,8 @@ function TaskChip({ task, block, onStart, onOpenAgain, onRemove }: ChipProps) {
         </div>
         <button className={styles.chipRemove} onClick={() => onRemove(task.id, block)}>×</button>
       </div>
-      <div className={styles.chipWhy}>{task.why}</div>
-      <div className={styles.chipCriteria}>{task.successCriteria}</div>
+      <div className={styles.chipWhy} title={task.why}>{task.why}</div>
+      <div className={styles.chipCriteria} title={task.successCriteria}>{task.successCriteria}</div>
       <div className={styles.chipActions}>
         {task.status === 'today' && (
           <button className={styles.chipStart} onClick={() => onStart(task)}>Start</button>

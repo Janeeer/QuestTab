@@ -12,16 +12,17 @@ interface SaveFormProps {
   url: string;
   domain: string;
   favicon?: string;
+  existingLocation?: 'inbox' | 'today';
   onSaveToInbox: (data: FormData) => void;
   onAddToToday: (data: FormData) => void;
 }
 
-export function SaveForm({ initialTitle, url, domain, favicon, onSaveToInbox, onAddToToday }: SaveFormProps) {
+export function SaveForm({ initialTitle, url, domain, favicon, existingLocation, onSaveToInbox, onAddToToday }: SaveFormProps) {
   const [title, setTitle] = useState(initialTitle);
   const [why, setWhy] = useState('');
   const [successCriteria, setSuccessCriteria] = useState('');
 
-  const isValid = why.trim().length > 0 && successCriteria.trim().length > 0;
+  const isValid = why.trim().length > 0 && successCriteria.trim().length > 0 && !existingLocation;
   const formData: FormData = { title: title.trim(), why: why.trim(), successCriteria: successCriteria.trim() };
 
   return (
@@ -58,6 +59,11 @@ export function SaveForm({ initialTitle, url, domain, favicon, onSaveToInbox, on
       </div>
 
       <div className={styles.actions}>
+        {existingLocation && (
+          <span className={styles.dupLabel}>
+            已在 {existingLocation === 'inbox' ? 'Inbox' : 'Today'}
+          </span>
+        )}
         <button className={styles.secondaryBtn} disabled={!isValid} onClick={() => onSaveToInbox(formData)}>
           Save to Inbox
         </button>

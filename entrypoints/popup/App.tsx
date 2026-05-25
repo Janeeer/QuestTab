@@ -13,7 +13,7 @@ interface PageMeta {
 }
 
 function PopupContent() {
-  const { addTask } = useTaskContext();
+  const { addTask, tasks } = useTaskContext();
   const [meta, setMeta] = useState<PageMeta | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -72,12 +72,18 @@ function PopupContent() {
   if (saved) return <div style={{ padding: 16, fontFamily: 'system-ui' }}>Saved ✓</div>;
   if (!meta) return <div style={{ padding: 16, fontFamily: 'system-ui' }}>Loading…</div>;
 
+  const existingTask = tasks.find(t => t.url === meta.url && t.status !== 'done');
+  const existingLocation = existingTask
+    ? (existingTask.status === 'inbox' ? 'inbox' : 'today')
+    : undefined;
+
   return (
     <SaveForm
       initialTitle={meta.title}
       url={meta.url}
       domain={meta.domain}
       favicon={meta.favicon}
+      existingLocation={existingLocation}
       onSaveToInbox={handleSaveToInbox}
       onAddToToday={handleAddToToday}
     />

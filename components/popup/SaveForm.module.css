@@ -90,6 +90,17 @@
   display: flex;
   gap: 8px;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.dupLabel {
+  font-size: 11px;
+  color: #b45309;
+  background: #fef3c7;
+  border-radius: 4px;
+  padding: 3px 7px;
+  margin-right: auto;
+  white-space: nowrap;
 }
 
 .primaryBtn,
