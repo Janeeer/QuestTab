@@ -12,9 +12,7 @@ const COLUMN_LABELS: Record<QuestColumnType, string> = {
 
 interface DraggableCardProps {
   task: Task;
-  onStart: (task: Task) => void;
   onMarkDone: (taskId: string) => void;
-  onOpenAgain: (task: Task) => void;
   onEdit: (taskId: string) => void;
   onDelete: (taskId: string) => void;
 }
@@ -32,9 +30,7 @@ function DraggableCard({ task, ...handlers }: DraggableCardProps) {
 interface QuestColumnProps {
   column: QuestColumnType;
   tasks: Task[];
-  onStart: (task: Task) => void;
   onMarkDone: (taskId: string) => void;
-  onOpenAgain: (task: Task) => void;
   onEdit: (taskId: string) => void;
   onDelete: (taskId: string) => void;
 }

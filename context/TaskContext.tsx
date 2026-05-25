@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { Task, QuestColumn } from '../types/task';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import type { Task, QuestColumn, TimeBlock } from '../types/task';
 import { getTasks, setTasks } from '../utils/storage';
 
 interface TaskContextValue {
@@ -14,26 +14,39 @@ interface TaskContextValue {
   startTask: (taskId: string, tabId: number) => Promise<void>;
   markDone: (taskId: string) => Promise<void>;
   editTask: (taskId: string, patch: Partial<Pick<Task, 'title' | 'why' | 'successCriteria'>>) => Promise<void>;
+  assignTimeBlock: (taskId: string, block: TimeBlock) => Promise<void>;
+  removeTimeBlock: (taskId: string, block: TimeBlock) => Promise<void>;
   deleteTask: (taskId: string) => Promise<void>;
 }
 
 const TaskContext = createContext<TaskContextValue | null>(null);
 
+// Backfill fields added after initial release so old stored tasks don't crash
+function migrate(t: Task): Task {
+  return { timeBlocks: [], ...t };
+}
+
 export function TaskContextProvider({ children }: { children: React.ReactNode }) {
   const [tasks, setTasksState] = useState<Task[]>([]);
+  const tasksRef = useRef<Task[]>([]);
+
+  const setTasks_ = (next: Task[]) => {
+    tasksRef.current = next;
+    setTasksState(next);
+  };
 
   useEffect(() => {
-    getTasks().then(setTasksState);
+    getTasks().then(raw => setTasks_(raw.map(migrate)));
     const listener = (changes: Record<string, chrome.storage.StorageChange>) => {
-      if (changes.tasks) setTasksState((changes.tasks.newValue as Task[]) ?? []);
+      if (changes.tasks) setTasks_(((changes.tasks.newValue as Task[]) ?? []).map(migrate));
     };
     chrome.storage.onChanged.addListener(listener);
     return () => chrome.storage.onChanged.removeListener(listener);
   }, []);
 
   const persist = async (updater: (prev: Task[]) => Task[]) => {
-    const next = updater(tasks);
-    setTasksState(next);
+    const next = updater(tasksRef.current);
+    setTasks_(next);
     await setTasks(next);
   };
 
@@ -46,6 +59,7 @@ export function TaskContextProvider({ children }: { children: React.ReactNode })
       id: crypto.randomUUID(),
       status: toToday ? 'today' : 'inbox',
       column: toToday ? 'main' : undefined,
+      timeBlocks: [],
       activeSeconds: 0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -83,11 +97,25 @@ export function TaskContextProvider({ children }: { children: React.ReactNode })
       t.id === taskId ? { ...t, ...patch, updatedAt: Date.now() } : t
     ));
 
+  const assignTimeBlock = async (taskId: string, block: TimeBlock) =>
+    persist(prev => prev.map(t =>
+      t.id === taskId && !t.timeBlocks.includes(block)
+        ? { ...t, timeBlocks: [...t.timeBlocks, block], updatedAt: Date.now() }
+        : t
+    ));
+
+  const removeTimeBlock = async (taskId: string, block: TimeBlock) =>
+    persist(prev => prev.map(t =>
+      t.id === taskId
+        ? { ...t, timeBlocks: t.timeBlocks.filter(b => b !== block), updatedAt: Date.now() }
+        : t
+    ));
+
   const deleteTask = async (taskId: string) =>
     persist(prev => prev.filter(t => t.id !== taskId));
 
   return (
-    <TaskContext.Provider value={{ tasks, addTask, moveToToday, moveToInbox, moveColumn, startTask, markDone, editTask, deleteTask }}>
+    <TaskContext.Provider value={{ tasks, addTask, moveToToday, moveToInbox, moveColumn, startTask, markDone, editTask, assignTimeBlock, removeTimeBlock, deleteTask }}>
       {children}
     </TaskContext.Provider>
   );

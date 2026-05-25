@@ -6,9 +6,7 @@ const COLUMNS: QuestColumnType[] = ['boss', 'main', 'side'];
 
 interface QuestBoardProps {
   tasks: Task[];
-  onStart: (task: Task) => void;
   onMarkDone: (taskId: string) => void;
-  onOpenAgain: (task: Task) => void;
   onEdit: (taskId: string) => void;
   onDelete: (taskId: string) => void;
 }

@@ -6,11 +6,11 @@ import { InboxSidebar } from '../../components/dashboard/InboxSidebar';
 import { TimeBlocks } from '../../components/dashboard/TimeBlocks';
 import { QuestBoard } from '../../components/dashboard/QuestBoard';
 import { EditModal } from '../../components/dashboard/EditModal';
-import type { Task, QuestColumn } from '../../types/task';
+import type { Task, QuestColumn, TimeBlock } from '../../types/task';
 import styles from './App.module.css';
 
 function Dashboard() {
-  const { tasks, moveToToday, moveToInbox, moveColumn, startTask, markDone, deleteTask, editTask } = useTaskContext();
+  const { tasks, moveToToday, moveToInbox, moveColumn, startTask, markDone, deleteTask, editTask, assignTimeBlock, removeTimeBlock } = useTaskContext();
   const [inboxOpen, setInboxOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -26,7 +26,7 @@ function Dashboard() {
     setActiveId(event.active.id as string);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = event;
     if (!over) return;
@@ -44,6 +44,12 @@ function Dashboard() {
       } else {
         moveColumn(taskId, col);
       }
+    } else if (target.startsWith('timeblock-')) {
+      const block = target.replace('timeblock-', '') as TimeBlock;
+      if (task.status === 'inbox') {
+        await moveToToday(taskId, 'main');
+      }
+      assignTimeBlock(taskId, block);
     }
   };
 
@@ -64,12 +70,15 @@ function Dashboard() {
         <div className={styles.body}>
           <InboxSidebar tasks={tasks} isOpen={inboxOpen} />
           <div className={styles.main}>
-            <TimeBlocks />
-            <QuestBoard
+            <TimeBlocks
               tasks={tasks}
               onStart={handleStart}
-              onMarkDone={markDone}
               onOpenAgain={handleOpenAgain}
+              onRemove={removeTimeBlock}
+            />
+            <QuestBoard
+              tasks={tasks}
+              onMarkDone={markDone}
               onEdit={setEditingTaskId}
               onDelete={deleteTask}
             />
