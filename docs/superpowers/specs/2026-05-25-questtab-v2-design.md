@@ -1,5 +1,5 @@
 # QuestTab — Design Spec v2
-_Date: 2026-05-25 (updated after timetable-first redesign)_
+_Date: 2026-05-25 (last updated: dedup, comet border, last-timed dot)_
 
 ## Overview
 
@@ -91,6 +91,7 @@ Architecture: **React Context + chrome.storage as single source of truth**
 ```typescript
 interface TaskContextValue {
   tasks: Task[];
+  lastTimedId: string | null;    // ID of task whose activeSeconds most recently increased
   addTask: (data, toToday?) => Promise<void>;
   moveToToday: (taskId, column?) => Promise<void>;
   moveToInbox: (taskId) => Promise<void>;
@@ -107,7 +108,7 @@ interface TaskContextValue {
 
 **Stale closure fix:** `tasksRef = useRef<Task[]>([])` mirrors state. `persist()` reads from `tasksRef.current` (not the closure-captured `tasks`) so sequential calls don't overwrite each other.
 
-**Storage sync:** `chrome.storage.onChanged` listener keeps the dashboard in sync with background's `activeSeconds` writes.
+**Storage sync:** `chrome.storage.onChanged` listener keeps the dashboard in sync with background's `activeSeconds` writes. The listener also detects which task's `activeSeconds` just increased and sets `lastTimedId` — used to show a purple dot on that card.
 
 ---
 
@@ -131,13 +132,15 @@ interface TaskContextValue {
 - 4 rows (morning / noon / afternoon / evening), each fixed height (130px)
 - Each row is a droppable zone — dragging any task (inbox or column) onto a row assigns that TimeBlock
 - Tasks in the same row rendered as horizontal-scrolling chips (no wrapping)
-- Chip shows: favicon, title, 💡 why, 🎯 success criteria, Start / Open Again / Done label
+- Chip shows: favicon, title, 💡 why (1 line), 🎯 success criteria (1 line), Start / Open Again / Done label
+- why/criteria truncated to 1 line; hover `title` attribute shows full text
 
 **QuestBoard:**
 - Three equal-width columns (`flex: 1; min-width: 0`), responsive to window width
 - Shows tasks with status `today | in_progress | done`
 - Done tasks stay visible (dimmed at 45% opacity)
-- Cards show: favicon, title, active time as `xxmin`
+- Cards show: favicon, title, active time as `xxmin` (integer minutes, `Math.ceil`)
+- Purple dot shown to the right of `xxmin` on the card whose `activeSeconds` most recently increased (`lastTimedId`)
 
 ---
 
@@ -153,6 +156,8 @@ interface TaskContextValue {
 | Any | TimeBlock row | if already `today`, just `assignTimeBlock` |
 
 Uses `MouseSensor` with `activationConstraint: { distance: 5 }` so button clicks are not swallowed by dnd-kit.
+
+**Duplicate URL check on drag:** When moving a task between inbox and today (or to a TimeBlock from inbox), check if another task with the same URL already exists. If so, show a confirmation modal before proceeding.
 
 ---
 
@@ -202,6 +207,21 @@ URL matching is primary because `trackedTabId` is written after `tabs.create` re
 
 ---
 
+## Popup — URL Deduplication
+
+When the popup opens on a page already saved (status ≠ `done`):
+- Both "Save to Inbox" and "Add to Today" buttons are **disabled**
+- A label appears on the left of the button row: `已在 Inbox` or `已在 Today`
+- `done` tasks are excluded — the user may want to revisit a completed page
+
+---
+
+## EditModal
+
+Fields: URL (read-only, with favicon + clickable link), Title, Why, Success Criteria.
+
+---
+
 ## TaskCard Visual States
 
 | Status | Appearance |
@@ -212,10 +232,12 @@ URL matching is primary because `trackedTabId` is written after `tabs.create` re
 | `done` | 45% opacity |
 
 **Comet border animation** (`in_progress` only):
-- `.borderGlow` pseudo-container: `position: absolute; inset: -2px; border: 4px solid transparent`
-- CSS mask (`content-box XOR border-box`) clips children to the 4px border ring
-- `.glowDot` inside: `width: 80px; height: 2.4px` (1.2× border width), `linear-gradient(to right, transparent, white)`
-- `offset-path: inset(0 0 0 0 round 8px)` + `offset-rotate: auto` → comet head always leads, tail fades behind
+- `.borderGlow`: `position: absolute; inset: -2px; padding: 4px; overflow: hidden`
+- CSS mask (`content-box XOR padding-box`) clips children to the 4px padding ring
+- `overflow: hidden` prevents the rotating comet from causing layout shifts in the flex column
+- `.glowDot` inside: `width: 80px; height: 3px`, `linear-gradient(to right, transparent, white)`
+- `offset-path: inset(2px 2px 2px 2px round 6px)` centers the path on the padding ring
+- `offset-rotate: auto` + `will-change: offset-distance` + `transform: translateZ(0)` → GPU composited, comet head always leads
 - Animation: 4s linear infinite
 
 ---
