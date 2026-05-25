@@ -1,0 +1,1 @@
+{"manifest_version":3,"name":"QuestTab","description":"Daily learning quest planner — turn web pages into focused, trackable tasks","version":"0.0.1","permissions":["storage","tabs","scripting","activeTab"],"host_permissions":["<all_urls>"],"background":{"service_worker":"background.js"},"action":{"default_title":"QuestTab","default_popup":"popup.html"}}
