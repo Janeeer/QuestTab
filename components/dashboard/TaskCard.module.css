@@ -1,4 +1,5 @@
 .card {
+  position: relative;
   background: white;
   border: 1px solid #e5e7eb;
   border-radius: 6px;
@@ -15,8 +16,46 @@
 }
 
 .in_progress {
-  border-color: #6366f1;
-  border-width: 2px;
+  border: 2px solid transparent;
+}
+
+.in_progress_boss { border-color: #ef4444; }
+.in_progress_main { border-color: #3b82f6; }
+.in_progress_side { border-color: #22c55e; }
+
+/* Mask container: clips children to the border ring only */
+.borderGlow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 8px;
+  border: 4px solid transparent;
+  pointer-events: none;
+  -webkit-mask:
+    linear-gradient(#fff, #fff) content-box,
+    linear-gradient(#fff, #fff) border-box;
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff, #fff) content-box,
+    linear-gradient(#fff, #fff) border-box;
+  mask-composite: exclude;
+}
+
+/* Comet: asymmetric tail → bright white head, follows path direction */
+.glowDot {
+  position: absolute;
+  width: 80px;
+  height: 2.4px;
+  border-radius: 3px;
+  background: linear-gradient(to right, transparent 0%, rgba(255, 255, 255, 0.4) 50%, white 100%);
+  filter: blur(1.5px);
+  offset-path: inset(0 0 0 0 round 8px);
+  offset-rotate: auto;
+  animation: travelBorder 4s linear infinite;
+}
+
+@keyframes travelBorder {
+  from { offset-distance: 0%; }
+  to { offset-distance: 100%; }
 }
 
 .done {

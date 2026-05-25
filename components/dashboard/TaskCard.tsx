@@ -2,12 +2,8 @@ import { useState } from 'react';
 import type { Task } from '../../types/task';
 import styles from './TaskCard.module.css';
 
-function formatSeconds(total: number): string {
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  return `${m}:${String(s).padStart(2, '0')}`;
+function formatDuration(total: number): string {
+  return `${Math.ceil(total / 60)}min`;
 }
 
 interface TaskCardProps {
@@ -19,13 +15,21 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onMarkDone, onEdit, onDelete }: TaskCardProps) {
   const [hovered, setHovered] = useState(false);
+  const columnClass = task.status === 'in_progress' && task.column
+    ? styles[`in_progress_${task.column}`]
+    : '';
 
   return (
     <div
-      className={`${styles.card} ${styles[task.status]}`}
+      className={`${styles.card} ${styles[task.status]} ${columnClass}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
+      {task.status === 'in_progress' && (
+        <span className={styles.borderGlow} aria-hidden="true">
+          <span className={styles.glowDot} />
+        </span>
+      )}
       <div className={styles.main}>
         {task.favicon
           ? <img src={task.favicon} className={styles.favicon} alt="" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
@@ -33,7 +37,7 @@ export function TaskCard({ task, onMarkDone, onEdit, onDelete }: TaskCardProps) 
         }
         <span className={styles.title}>{task.title}</span>
         {task.activeSeconds > 0 && (
-          <span className={styles.timer}>{formatSeconds(task.activeSeconds)}</span>
+          <span className={styles.timer}>{formatDuration(task.activeSeconds)}</span>
         )}
       </div>
 

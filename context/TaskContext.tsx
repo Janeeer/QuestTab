@@ -11,7 +11,8 @@ interface TaskContextValue {
   moveToToday: (taskId: string, column?: QuestColumn) => Promise<void>;
   moveToInbox: (taskId: string) => Promise<void>;
   moveColumn: (taskId: string, column: QuestColumn) => Promise<void>;
-  startTask: (taskId: string, tabId: number) => Promise<void>;
+  startTask: (taskId: string) => Promise<void>;
+  setTrackedTab: (taskId: string, tabId: number) => Promise<void>;
   markDone: (taskId: string) => Promise<void>;
   editTask: (taskId: string, patch: Partial<Pick<Task, 'title' | 'why' | 'successCriteria'>>) => Promise<void>;
   assignTimeBlock: (taskId: string, block: TimeBlock) => Promise<void>;
@@ -82,9 +83,14 @@ export function TaskContextProvider({ children }: { children: React.ReactNode })
       t.id === taskId ? { ...t, column, updatedAt: Date.now() } : t
     ));
 
-  const startTask = async (taskId: string, tabId: number) =>
+  const startTask = async (taskId: string) =>
     persist(prev => prev.map(t =>
-      t.id === taskId ? { ...t, status: 'in_progress', trackedTabId: tabId, updatedAt: Date.now() } : t
+      t.id === taskId ? { ...t, status: 'in_progress', updatedAt: Date.now() } : t
+    ));
+
+  const setTrackedTab = async (taskId: string, tabId: number) =>
+    persist(prev => prev.map(t =>
+      t.id === taskId ? { ...t, trackedTabId: tabId, updatedAt: Date.now() } : t
     ));
 
   const markDone = async (taskId: string) =>
@@ -115,7 +121,7 @@ export function TaskContextProvider({ children }: { children: React.ReactNode })
     persist(prev => prev.filter(t => t.id !== taskId));
 
   return (
-    <TaskContext.Provider value={{ tasks, addTask, moveToToday, moveToInbox, moveColumn, startTask, markDone, editTask, assignTimeBlock, removeTimeBlock, deleteTask }}>
+    <TaskContext.Provider value={{ tasks, addTask, moveToToday, moveToInbox, moveColumn, startTask, setTrackedTab, markDone, editTask, assignTimeBlock, removeTimeBlock, deleteTask }}>
       {children}
     </TaskContext.Provider>
   );

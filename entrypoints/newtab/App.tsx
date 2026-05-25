@@ -10,7 +10,7 @@ import type { Task, QuestColumn, TimeBlock } from '../../types/task';
 import styles from './App.module.css';
 
 function Dashboard() {
-  const { tasks, moveToToday, moveToInbox, moveColumn, startTask, markDone, deleteTask, editTask, assignTimeBlock, removeTimeBlock } = useTaskContext();
+  const { tasks, moveToToday, moveToInbox, moveColumn, startTask, setTrackedTab, markDone, deleteTask, editTask, assignTimeBlock, removeTimeBlock } = useTaskContext();
   const [inboxOpen, setInboxOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -54,13 +54,14 @@ function Dashboard() {
   };
 
   const handleStart = async (task: Task) => {
-    const tab = await chrome.tabs.create({ url: task.url });
-    if (tab.id != null) await startTask(task.id, tab.id);
+    await startTask(task.id);                              // in_progress 先写入 storage
+    const tab = await chrome.tabs.create({ url: task.url }); // 再开 tab，onActivated 触发时已是 in_progress
+    if (tab.id != null) await setTrackedTab(task.id, tab.id);
   };
 
   const handleOpenAgain = async (task: Task) => {
     const tab = await chrome.tabs.create({ url: task.url });
-    if (tab.id != null) await startTask(task.id, tab.id);
+    if (tab.id != null) await setTrackedTab(task.id, tab.id);
   };
 
   return (

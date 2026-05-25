@@ -5,13 +5,15 @@
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  background: #fefce8;
 }
 
 .row {
   display: flex;
   align-items: flex-start;
   border-bottom: 1px solid #f3f4f6;
-  min-height: 100px;
+  height: 130px;
+  overflow: hidden;
   transition: background 0.1s;
 }
 
@@ -39,10 +41,12 @@
 .rowSlots {
   flex: 1;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 10px;
   padding: 10px 14px;
   align-content: flex-start;
+  overflow-x: auto;
+  align-items: flex-start;
 }
 
 .rowEmpty {
@@ -141,8 +145,16 @@
   overflow: hidden;
 }
 
+.chipWhy::before {
+  content: '💡 ';
+}
+
 .chipCriteria {
   color: #9ca3af;
+}
+
+.chipCriteria::before {
+  content: '🎯 ';
 }
 
 .chipActions {

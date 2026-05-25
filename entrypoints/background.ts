@@ -8,7 +8,7 @@ export default defineBackground(() => {
 
   async function getInProgress(): Promise<Task[]> {
     const tasks = await getTasks();
-    return tasks.filter(t => t.status === 'in_progress' && t.trackedTabId != null);
+    return tasks.filter(t => t.status === 'in_progress');
   }
 
   async function stopAndSave(taskId: string) {
@@ -20,10 +20,20 @@ export default defineBackground(() => {
     await updateTask(taskId, { activeSeconds: task.activeSeconds + seconds });
   }
 
+  // Match active tab to an in_progress task by URL (primary) or trackedTabId (fallback).
+  // Using URL means startTask() can be called before tab opens — no race condition.
   async function syncActiveTab(tabId: number) {
-    const inProgress = await getInProgress();
+    const [activeTab, inProgress] = await Promise.all([
+      chrome.tabs.get(tabId).catch(() => null),
+      getInProgress(),
+    ]);
+
     for (const task of inProgress) {
-      if (task.trackedTabId === tabId && windowFocused) {
+      const matches =
+        (activeTab?.url && task.url === activeTab.url) ||
+        task.trackedTabId === tabId;
+
+      if (matches && windowFocused) {
         tracker.startTick(task.id);
       } else if (tracker.isTracking(task.id)) {
         await stopAndSave(task.id);

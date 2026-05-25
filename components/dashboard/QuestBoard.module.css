@@ -6,4 +6,6 @@
   overflow-y: auto;
   align-items: flex-start;
   max-height: 260px;
+  width: 100%;
+  box-sizing: border-box;
 }
